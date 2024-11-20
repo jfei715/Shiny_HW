@@ -1,0 +1,300 @@
+---
+title: "Shiny_HW"
+author: "Jie Fei"
+output:
+  html_document: default
+  pdf_document: default
+runtime: shiny
+---
+
+```{r}
+library(shiny)
+```
+
+```{r}
+# shiny app
+ui <- fluidPage(
+  titlePanel("Hello Shiny!"),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("num", "Choose a number:", min = 1, max = 100, value = 50)
+    ),
+    mainPanel(
+      textOutput("result")
+    )
+  )
+)
+
+# define server logic
+server <- function(input, output) {
+  output$result <- renderText({
+    paste("You chose", input$num)
+  })
+}
+
+# run the application
+shinyApp(ui = ui, server = server)
+```
+```{r}
+# shiny app
+ui <- fluidPage(
+  titlePanel("Interactive Plot"),
+  sidebarLayout(
+    sidebarPanel(
+      numericInput("n", "Number of points:", 100),
+      selectInput("color", "Color:", choices = c("Red", "Blue", "Green"))
+    ),
+    mainPanel(
+      plotOutput("scatterPlot")
+    )
+  )
+)
+
+server <- function(input, output) {
+  output$scatterPlot <- renderPlot({
+    plot(rnorm(input$n), rnorm(input$n), col = input$color, pch = 16)
+  })
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+# 2.3.5 Exercises
+
+### Q1
+
+1a. renderPrint(summary(mtcars)) Paired with: verbatimTextOutput()
+1b. renderText("Good morning!") Paired with: textOutput()
+1c. renderPrint(t.test(1:5, 2:6)) Paired with: verbatimTextOutput()
+1d. renderText(str(lm(mpg ~ wt, data = mtcars))) Paired with: textOutput()
+
+### Q2
+
+```{r}
+ui <- fluidPage(
+  tags$div(
+    plotOutput("scatterplot", height = "300px", width = "700px"),
+    tags$p("Scatterplot of five random numbers", class = "sr-only")
+    # The "sr-only" class is commonly used for screen readers
+  )
+)
+
+server <- function(input, output, session) {
+  output$scatterplot <- renderPlot({
+    plot(runif(5), runif(5), xlab = "X-axis", ylab = "Y-axis", main = "Scatterplot")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+### Q3
+
+```{r}
+library(DT)
+
+ui <- fluidPage(
+  DTOutput("table") 
+)
+
+server <- function(input, output, session) {
+  output$table <- renderDT(
+    mtcars, 
+    options = list(
+      dom = 't',
+      paging = FALSE     
+    )
+  )
+}
+
+shinyApp(ui, server)
+
+```
+
+### Q4
+
+```{r}
+library(reactable)
+
+ui <- fluidPage(
+  reactableOutput("table")
+)
+
+server <- function(input, output, session) {
+  output$table <- renderReactable({
+    reactable(
+      mtcars,
+      searchable = FALSE, 
+      sortable = FALSE, 
+      pagination = FALSE 
+    )
+  })
+}
+
+shinyApp(ui, server)
+```
+
+# 3.3.6 Exercises
+
+### Q1
+
+```{r}
+# server 1
+server1 <- function(input, output, session) {
+  output$greeting <- renderText({
+    paste0("Hello ", input$name)
+  })
+}
+
+# server 2
+server2 <- function(input, output, session) {
+  output$greeting <- renderText({
+    paste0("Hello ", input$name)
+  })
+}
+
+# server 3
+server3 <- function(input, output, session) {
+  output$greeting <- renderText({
+    paste0("Hello ", input$name)
+  })
+}
+```
+
+### Q2
+
+### server 1
+[input$a] ──►
+             c() ──►
+[input$b] ──►        e() ──► output$f
+[input$d] ─────────►
+
+### server 2
+[input$x1] ──►
+[input$x2] ──► x() ──►
+[input$x3] ──►        output$z
+[input$y1] ──►
+[input$y2] ──► y() ──►
+
+### server 3
+[input$a] ──►
+             a() ──►
+[input$b] ──►        b() ──►
+[input$c] ─────────►        c() ──►
+[input$d] ───────────────────────► d()
+
+### Q3
+
+1. range() is a base R function for computing the range of values. By using the same name for a reactive, you overwrite this function in the current environment. This can cause conflicts and errors when Shiny tries to evaluate range().
+2. Similarly, var() is a base R function to compute variance. Overwriting this function leads to confusion and unexpected behavior.
+3. Reactives with the same name as base R functions make it harder to debug and trace dependencies because they mask the original functions.
+
+# 4.8 Exercises
+
+### Q1
+
+### app 1
+[input$code] ──► selected() ──► summary()
+                                  │
+     ┌────────────────────────────┴────────────────────────────┐
+     │                                                         │
+output$diag   ◄── count_top(selected(), diag)           output$age_sex (plot)
+output$body_part ◄── count_top(selected(), body_part)  
+output$location  ◄── count_top(selected(), location)  
+
+### app 2
+[input$code] ──► selected() ──► summary()
+[input$y]         ────────────────┘
+                           │
+output$diag ◄── count_top(selected(), diag)
+output$body_part ◄── count_top(selected(), body_part)
+output$location ◄── count_top(selected(), location)
+output$age_sex ◄── ggplot(summary(), aes(age, input$y))
+
+### app 3
+[input$code] ──► selected() ──► summary()
+[input$story] ───► narrative_sample ◄── selected()
+                            │
+                     output$narrative
+                     
+### Q2
+
+If fct_lump() comes first: Infrequent levels are grouped into "Other" before ordering by frequency. This means the "Other" category will not reflect its frequency compared to other levels.
+
+If fct_infreq() comes first: Levels are ordered by frequency before collapsing infrequent levels into "Other." This ensures that "Other" represents the sum of the least frequent levels and is placed appropriately in the frequency order.
+
+### Q3
+
+ui <- fluidPage(
+  fluidRow(
+    column(6, selectInput("code", "Product", choices = prod_codes)),
+    column(6, numericInput("nrows", "Number of rows:", value = 5, min = 1, max = 20))
+  ),
+  fluidRow(
+    column(4, tableOutput("diag")),
+    column(4, tableOutput("body_part")),
+    column(4, tableOutput("location"))
+  )
+)
+
+server <- function(input, output, session) {
+  selected <- reactive(injuries %>% filter(prod_code == input$code))
+
+  output$diag <- renderTable(count_top(selected(), diag, n = input$nrows), width = "100%")
+  output$body_part <- renderTable(count_top(selected(), body_part, n = input$nrows), width = "100%")
+  output$location <- renderTable(count_top(selected(), location, n = input$nrows), width = "100%")
+}
+
+shinyApp(ui, server)
+
+### Q4
+
+```{r}
+ui <- fluidPage(
+  fluidRow(
+    column(2, actionButton("prev", "Previous")),
+    column(2, actionButton("next_btn", "Next")),
+    column(8, textOutput("narrative"))
+  )
+)
+
+server <- function(input, output, session) {
+  selected <- reactive(injuries %>% filter(prod_code == input$code))
+  narratives <- reactive(selected() %>% pull(narrative))
+  index <- reactiveVal(1)
+
+  observeEvent(input$next_btn, {
+    new_index <- index() + 1
+    if (new_index > length(narratives())) {
+      new_index <- 1 
+    }
+    index(new_index)
+  })
+
+  observeEvent(input$prev, {
+    new_index <- index() - 1
+    if (new_index < 1) {
+      new_index <- length(narratives()) 
+    }
+    index(new_index)
+  })
+
+  output$narrative <- renderText({
+    narratives()[index()]
+  })
+}
+
+shinyApp(ui, server)
+```
+
+# compare Hadley1 and Hadley2
+
+### compare UI code
+diffobj::diffChr(readLines("Hadley_1/ui.R"), readLines("Hadley_2/ui.R"))
+
+### compare server logic
+diffobj::diffChr(readLines("Hadley_1/server.R"), readLines("Hadley_2/server.R"))
+
+### run both apps
+shiny::runApp("Hadley_1")
+shiny::runApp("Hadley_2")
